@@ -24,8 +24,56 @@ class Leaf {
      this.element.onclick = () => {
         score++; // Increment the score
         scoreElement.textContent = score;
-
         
-     }
+        this.element.style.transform = 'scale(0.5)';
+        setTimeout(() => {
+            this.reset(); // a levelet vissza a tetejére
+            this.element.style.transform = 'scale(1)';
+        }, 100)
+     };
+
+
+     document.body.appendChild(this.element); //hozza adas az oldalra
+
+     //Inicializálja az összes paramétert
+     this.reset();
     }
+
+    reset() {
+        //random meret
+        this.size Math.ramdom() * 40 + 50;
+        this.element.style.width = '${this.size}px';
+        this.element.style.height = '${this.size}px';
+
+        //indulás a képernyő tetején kevul
+        this.x = Math.random() * window.innerWidth;
+        this.y = -this.size - (Math.random() * window.innerHeight)
+
+        this.speed = Math.ramdom() *1.36 +1;
+
+        this.updateDOM();
+
+    }
+
+    update() {
+        //lesés
+        this.y += this.speed;
+
+        if (this.y > window.innerHeight) {
+            this.reset();
+        }
+    }
+
+    updateDOM() {
+        this.element.style.left = '${this.x}px';
+        this.element.style.top = '${this.y}px';
+    }
+    
+    const leaves = [];
+    const LEAF_COUNT = 5;
+
+    function initialze() {
+        
+    }
+
 }
