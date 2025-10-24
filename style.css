@@ -5,6 +5,8 @@ body {
     margin: 0;
     overflow: hidden;
     position: relative;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 
@@ -35,5 +37,3 @@ body {
     text-shadow: rgba(0, 0, 0, 0.705);
 
 }
-
-

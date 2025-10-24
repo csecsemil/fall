@@ -1,5 +1,5 @@
 let score = 0; 
-const scoreElement = document.getElementById('pontszám');
+const scoreElement = document.getElementById('score');
 
 const LETTER_PICTURES = [
     'fal_2.png',
@@ -29,25 +29,26 @@ class Leaf {
             this.reset(); // a levelet vissza a tetejére
             this.element.style.transform = 'scale(1)';
         }, 100)
+        // 100ms után hajtja végre a tartalmát
      };
 
      document.body.appendChild(this.element); //hozza adas az oldalra
-
-     //Inicializálja az összes paramétert
+     this.element.ondragstart = function() { return false; };
+     //(Inicializálja) alaphelyzetbe állítja az összes paramétert
      this.reset();
     }
 
     reset() {
-        //random meret
-        this.size = Math.random() * 15 + 10;
-        this.element.style.width = `${this.size}px`;
-        this.element.style.height = `${this.size}px`;
+        //random meret - kisebb levelek
+        this.size = Math.random() * 60 + 90; 
+        this.imageElement.style.width = `${this.size}px`;
+        this.imageElement.style.height = `${this.size}px`;
 
         //indulás a képernyő tetején kevul
         this.x = Math.random() * window.innerWidth;
         this.y = -this.size - (Math.random() * window.innerHeight)
 
-        this.speed = Math.random() * 1.36 + 1;
+        this.speed = Math.random() * 1.5 + 1;
 
         this.updateDOM();
     }
@@ -94,3 +95,5 @@ window.onload = () => {
 
 window.addEventListener('resize', () => {
 })
+
+
