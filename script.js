@@ -1,11 +1,21 @@
 let score = 0; 
 const scoreElement = document.getElementById('score');
 
+let highScore = parseInt(localStorage.getItem('fallingLetterHighScore')) || 0; // parseInt hozzáadása
+const HIGH_SCORE_KEY = 'fallingLetterHighScore'; 
+const highScoreElement = document.getElementById('high-score'); // 'highScore' → 'high-score'
+
+
 const LETTER_PICTURES = [
     'fal_2.png',
     'fal_1.png',
     'fal_3.png'
 ];
+
+// magas pontszám kijelzése kezdéskor
+if (highScoreElement) {
+    highScoreElement.textContent = highScore;
+}
 
 class Leaf {
     constructor() {
@@ -24,6 +34,15 @@ class Leaf {
         score++; // Increment the score
         scoreElement.textContent = score;
         
+        // frissítés a leg magasabb 
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem(HIGH_SCORE_KEY, highScore);
+            if (highScoreElement) {
+                highScoreElement.textContent = highScore; // Most már működik!
+            }
+        }
+
         this.element.style.transform = 'scale(0.5)';
         setTimeout(() => {
             this.reset(); // a levelet vissza a tetejére

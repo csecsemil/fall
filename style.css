@@ -39,3 +39,17 @@ body {
     text-shadow: rgba(0, 0, 0, 0.705);
 
 }
+
+#high-score-display {
+    position: fixed;
+    top: 100px;
+    left: 20px;
+    z-index: 100;
+    background-color: rgba(29, 25, 25, 0.4);
+    color: #ffd700;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.705);
+}
