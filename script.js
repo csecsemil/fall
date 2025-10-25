@@ -48,7 +48,7 @@ class Leaf {
         this.x = Math.random() * window.innerWidth;
         this.y = -this.size - (Math.random() * window.innerHeight)
 
-        this.speed = Math.random() * 1.5 + 1;
+        this.speed = Math.random() * 3 + 1;
 
         this.updateDOM();
     }
@@ -56,8 +56,10 @@ class Leaf {
     update() {
         //lesés
         this.y += this.speed;
-
+        //képernyő aljára lesik
         if (this.y > window.innerHeight) {
+            score = 0; //pont nullázása
+            scoreElement.textContent = score; //kijelző frissítés
             this.reset();
         }
     }
@@ -66,6 +68,8 @@ class Leaf {
         this.element.style.left = `${this.x}px`;
         this.element.style.top = `${this.y}px`;
     }
+
+    
 }
 
 const leaves = [];
