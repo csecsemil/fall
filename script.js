@@ -1,25 +1,81 @@
 let score = 0; 
 const scoreElement = document.getElementById('score');
 
-let highScore = parseInt(localStorage.getItem('fallingLetterHighScore')) || 0; // parseInt hozzáadása
+//legjobb eredmény
+let highScore = parseInt(localStorage.getItem('fallingLetterHighScore')) || 0;
 const HIGH_SCORE_KEY = 'fallingLetterHighScore'; 
-const highScoreElement = document.getElementById('high-score'); // 'highScore' → 'high-score'
+const highScoreElement = document.getElementById('high-score');
 
+// Nehézségi konstansok hozzáadása
+const DIFFICULTY_SCORE_THRESHOLD = 10;
+const DIFFICULTY_SPEED_INCREMENT = 0.2;
+let difficultyMultiplier = 1.0;
 
-const LETTER_PICTURES = [
+const LEAF_PICTURES = [
     'fal_2.png',
     'fal_1.png',
     'fal_3.png'
 ];
+
+const STONE_PICTURE_URL = 'file:///home/emil/hackclub/fall/rockk.png'
+const STONE_SCORE_DECREMENT = 5; // ennyit von le
 
 // magas pontszám kijelzése kezdéskor
 if (highScoreElement) {
     highScoreElement.textContent = highScore;
 }
 
+//visszajelzés
+function showScoreFeedback(amount){
+    //animált visszajelzes
+    const feedback = document.createElement('div');
+    feedback.textContent = amount > 0 ? `+${amount}` : `${amount}`;
+    feedback.className = 'score-feedback';
+
+    //stilus
+    feedback.style.position = 'fixed'
+    feedback.style.color = amount > 0 ? '#4CAF50' : '#FF4D4D' //zoldpiiros
+    feedback.style.fontWeight = 'bold';
+    feedback.style.fontSize = '2.5rem';
+    feedback.style.zIndex = '200';
+    feedback.style.pointerEvents = 'none'; // blkkolja a kattintast
+
+    //pozicionálás 
+    const scoreRect = scoreElement.parentElement.getBoundingClientRect();
+    feedback.style.left = `${scoreRect.right + 10}px`;
+    feedback.style.top = `${scoreRect.top + scoreRect.height / 2 - 20}px`;
+
+    document.body.appendChild(feedback);
+
+    //felhuzas animacio
+    let start = null;
+    const duration = 1000; //1 masodperces animacio
+
+    function animate(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+        const percentage = progress / duration;
+
+        if (percentage < 1) {
+            //hely modositas
+            const newY = parseFloat(feedback.style.top) - (percentage * 50);
+            // halványulas
+            feedback.style.opacity = 1 - percentage;
+            feedback.style.top = `${newY}px`;
+            requestAnimationFrame(animate);
+        } else {
+            // vege
+            feedback.remove();
+        }
+
+    }
+    requestAnimationFrame(animate);
+
+}
+
 class Leaf {
     constructor() {
-     this.imageURL = LETTER_PICTURES[Math.floor(Math.random() * LETTER_PICTURES.length)];
+     this.imageURL = LEAF_PICTURES[Math.floor(Math.random() * LEAF_PICTURES.length)];
     
      this.element = document.createElement('div');
      this.element.className = 'leaf-element';
@@ -31,29 +87,30 @@ class Leaf {
      this.element.appendChild(this.imageElement)
 
      this.element.onclick = () => {
-        score++; // Increment the score
+        score++; 
         scoreElement.textContent = score;
+        
+        // Animáció meghívása
+        showScoreFeedback(1); // +1 pont animáció
         
         // frissítés a leg magasabb 
         if (score > highScore) {
             highScore = score;
             localStorage.setItem(HIGH_SCORE_KEY, highScore);
             if (highScoreElement) {
-                highScoreElement.textContent = highScore; // Most már működik!
+                highScoreElement.textContent = highScore;
             }
         }
 
         this.element.style.transform = 'scale(0.5)';
         setTimeout(() => {
-            this.reset(); // a levelet vissza a tetejére
+            this.reset();
             this.element.style.transform = 'scale(1)';
         }, 100)
-        // 100ms után hajtja végre a tartalmát
      };
 
-     document.body.appendChild(this.element); //hozza adas az oldalra
+     document.body.appendChild(this.element);
      this.element.ondragstart = function() { return false; };
-     //(Inicializálja) alaphelyzetbe állítja az összes paramétert
      this.reset();
     }
 
@@ -74,21 +131,19 @@ class Leaf {
 
     update() {
         //lesés
-        this.y += this.speed;
-        //képernyő aljára lesik
+        this.y += this.speed * difficultyMultiplier; // Nehézség alkalmazása
+
         if (this.y > window.innerHeight) {
-            score = 0; //pont nullázása
-            scoreElement.textContent = score; //kijelző frissítés
+            score = 0;
+            scoreElement.textContent = score;
             this.reset();
         }
     }
 
     updateDOM() {
-        this.element.style.left = `${this.x}px`;
+        this.element.style.left = `${this.x}px`; // javítva: this.element
         this.element.style.top = `${this.y}px`;
     }
-
-    
 }
 
 const leaves = [];
@@ -96,15 +151,24 @@ const LEAF_COUNT = 5;
 
 function initialize() {
     for (let i = 0; i < LEAF_COUNT; i++) {
-        if (LETTER_PICTURES.length > 0) {
+        if (LEAF_PICTURES.length > 0) { 
             leaves.push(new Leaf());
         }
     }
 }
 
 function gameLoop() {
+    // nehézségi szorzó
+    const level = Math.floor(score / DIFFICULTY_SCORE_THRESHOLD);
+    const newMultiplier = 1.0 + (level * DIFFICULTY_SPEED_INCREMENT);
+
+    if (newMultiplier !== difficultyMultiplier) {
+        difficultyMultiplier = newMultiplier;
+        console.log(`Difficulty level increased: ${level + 1}. level. Multiplier: ${difficultyMultiplier.toFixed(2)}`); // javítva
+    }
+
     leaves.forEach(leaf => {
-        leaf.update();  //uj kordinata
+        leaf.update();
         leaf.updateDOM();
     });
 
@@ -117,6 +181,7 @@ window.onload = () => {
 };
 
 window.addEventListener('resize', () => {
+    //levelek ne mennyenek ki a képernyőről
 })
 
 

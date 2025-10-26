@@ -53,3 +53,9 @@ body {
     font-weight: bold;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.705);
 }
+
+.score-feedback {
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-out;
+}
