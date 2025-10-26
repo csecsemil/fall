@@ -1,142 +1,134 @@
 let score = 0; 
-        const scoreElement = document.getElementById('score');
+const scoreElement = document.getElementById('score');
 
-        // --- LEGJOBB EREDMÉNY LOGIKA ---
-        // A legmagasabb pontszám betöltése a localStorage-ból 
-        let highScore = parseInt(localStorage.getItem('fallingLetterHighScore')) || 0; 
-        const HIGH_SCORE_KEY = 'fallingLetterHighScore'; 
-        const highScoreElement = document.getElementById('high-score'); 
+// --- LEGJOBB EREDMÉNY LOGIKA ---
+let highScore = parseInt(localStorage.getItem('fallingLetterHighScore')) || 0; 
+const HIGH_SCORE_KEY = 'fallingLetterHighScore'; 
+const highScoreElement = document.getElementById('high-score'); 
 
-        // --- NEHÉZSÉGI SZINT LOGIKA ---
-        const DIFFICULTY_SCORE_THRESHOLD = 15; // Ennyi pontonként nő a nehézség.
-        const DIFFICULTY_SPEED_INCREMENT = 0.2; // Ennyivel gyorsul minden szintlépésnél.
-        let difficultyMultiplier = 1.0; // Jelenlegi sebesség szorzó.
+const DIFFICULTY_SCORE_THRESHOLD = 15;
+const DIFFICULTY_SPEED_INCREMENT = 0.2; 
+let difficultyMultiplier = 1.0;
 
-        // --- Kép Beállítások (ÚJ KŐ ELEM) ---
-        // Képfájlok elérési útvonalai (ezeket a fájlokat mellé kell helyezni)
-        const LEAF_PICTURES = [ // Átnevezve LEAF_PICTURES-re, hogy megkülönböztessük a kőtől
-            'fal_2.png',
-            'fal_1.png',
-            'fal_3.png'
-        ];
-        // Kő kép URL-je (placeholder)
-        const STONE_PICTURE_URL = 'rockk.png'; 
-        const STONE_SCORE_DECREMENT = 5; // Ennyi pontot von le a kő
+const LEAF_PICTURES = [ 
+    'fal_2.png',
+    'fal_1.png',
+    'fal_3.png'
+];
+const STONE_PICTURE_URL = 'stikpng.webp'; 
+const STONE_SCORE_DECREMENT = 5; // javítva: komment hozzáadás
 
-        // Legjobb eredmény kijelzése induláskor
-        if (highScoreElement) {
-            highScoreElement.textContent = highScore;
+if (highScoreElement) {
+    highScoreElement.textContent = highScore;
+}
+
+// Életpontok inicializálása
+let lives = 3;
+const livesElement = document.getElementById('lives');
+if (livesElement) {
+    livesElement.textContent = lives;
+}
+
+// Visszajelzés 
+function showScoreFeedback(amount) {
+    const feedback = document.createElement('div');
+    feedback.textContent = amount > 0 ? `+${amount}` : `${amount}`;
+    feedback.className = 'score-feedback';
+
+    // Stílus beállítása
+    feedback.style.position = 'fixed';
+    feedback.style.color = amount > 0 ? '#4CAF50' : '#FF4D4D';
+    feedback.style.fontWeight = 'bold';
+    feedback.style.fontSize = '2.5rem';
+    feedback.style.zIndex = '200';
+    feedback.style.pointerEvents = 'none';
+
+    const scoreRect = scoreElement.parentElement.getBoundingClientRect();
+    feedback.style.left = `${scoreRect.right + 10}px`; 
+    feedback.style.top = `${scoreRect.top + scoreRect.height / 2 - 20}px`;
+
+    document.body.appendChild(feedback);
+
+    let start = null;
+    const duration = 1000;
+
+    function animate(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+        const percentage = progress / duration;
+
+        if (percentage < 1) {
+            const newY = parseFloat(feedback.style.top) - (percentage * 50); 
+            feedback.style.opacity = 1 - percentage;
+            feedback.style.top = `${newY}px`;
+            requestAnimationFrame(animate);
+        } else {
+            feedback.remove();
         }
+    }
+    requestAnimationFrame(animate);
+}
 
-        // --- Visszajelzés Animáció Funkció ---
-        function showScoreFeedback(amount) {
-            // Létrehozza az animált szöveges visszajelzést
-            const feedback = document.createElement('div');
-            feedback.textContent = amount > 0 ? `+${amount}` : `${amount}`;
-            feedback.className = 'score-feedback';
+class Leaf {
+    constructor() {
+        this.element = document.createElement('div');
+        this.element.className = 'leaf-element';
 
-            // Stílus beállítása
-            feedback.style.position = 'fixed';
-            feedback.style.color = amount > 0 ? '#4CAF50' : '#FF4D4D'; // Zöld/Piros
-            feedback.style.fontWeight = 'bold';
-            feedback.style.fontSize = '2.5rem';
-            feedback.style.zIndex = '200';
-            feedback.style.pointerEvents = 'none'; // Ne blokkolja a kattintásokat
+        this.imageElement = document.createElement('img');
+        
+        this.element.appendChild(this.imageElement); // javítva: ű eltávolítás
 
-            // Pozicionálás a pontszám kijelző mellé (jobb oldala)
-            const scoreRect = scoreElement.parentElement.getBoundingClientRect();
-            feedback.style.left = `${scoreRect.right + 10}px`; 
-            feedback.style.top = `${scoreRect.top + scoreRect.height / 2 - 20}px`;
+        // javítva: gépelési hibák
+        this.swayStartTime = performance.now();
 
-            document.body.appendChild(feedback);
-
-            // Animáció: felúszás és eltűnés
-            let start = null;
-            const duration = 1000; // 1 másodperces animáció
-
-            function animate(timestamp) {
-                if (!start) start = timestamp;
-                const progress = timestamp - start;
-                const percentage = progress / duration;
-
-                if (percentage < 1) {
-                    // Pozíció módosítása (felúszik 50px-t)
-                    const newY = parseFloat(feedback.style.top) - (percentage * 50); 
-                    // Átlátszóság csökkentése (halványul)
-                    feedback.style.opacity = 1 - percentage;
-                    feedback.style.top = `${newY}px`;
-                    requestAnimationFrame(animate);
-                } else {
-                    // Animáció vége, elem eltávolítása
-                    feedback.remove();
+        this.element.onclick = () => {
+            let isHighScoreCheckNeeded = true;
+            
+            if (this.type === 'leaf') {
+                score++; 
+                showScoreFeedback(1);
+            } else {
+                score = Math.max(0, score - STONE_SCORE_DECREMENT); 
+                isHighScoreCheckNeeded = false;
+                showScoreFeedback(-STONE_SCORE_DECREMENT);
+            }
+            
+            scoreElement.textContent = score;
+            
+            if (isHighScoreCheckNeeded && score > highScore) {
+                highScore = score;
+                localStorage.setItem(HIGH_SCORE_KEY, highScore);
+                if (highScoreElement) {
+                    highScoreElement.textContent = highScore;
                 }
             }
-            requestAnimationFrame(animate);
-        }
 
-        // --- Leaf (Levél/Betű) Osztály ---
-        class Leaf {
-            constructor() {
-                // Külső DIV konténer létrehozása
-                this.element = document.createElement('div');
-                this.element.className = 'leaf-element';
+            this.element.style.transform = 'scale(0.5)';
+            setTimeout(() => {
+                this.reset();
+                this.element.style.transform = 'scale(1)';
+            }, 100);
+        };
 
-                // Image tag létrehozása
-                this.imageElement = document.createElement('img');
-                
-                this.element.appendChild(this.imageElement);
-
-                // Kattintás kezelő (Levél elkapása)
-                this.element.onclick = () => {
-                    let isHighScoreCheckNeeded = true;
-                    
-                    if (this.type === 'leaf') {
-                        // Levél: +1 pont
-                        score++; 
-                        showScoreFeedback(1);
-                    } else {
-                        // Kő: -5 pont (nem mehet 0 alá)
-                        score = Math.max(0, score - STONE_SCORE_DECREMENT); 
-                        isHighScoreCheckNeeded = false; // Negatív pontnál nem kell HighScore-t ellenőrizni
-                        showScoreFeedback(-STONE_SCORE_DECREMENT);
-                    }
-                    
-                    scoreElement.textContent = score;
-                    
-                    // Legjobb eredmény frissítése és mentése
-                    if (isHighScoreCheckNeeded && score > highScore) {
-                        highScore = score;
-                        localStorage.setItem(HIGH_SCORE_KEY, highScore);
-                        if (highScoreElement) {
-                            highScoreElement.textContent = highScore;
-                        }
-                    }
-
-                    this.element.style.transform = 'scale(0.5)';
-                    setTimeout(() => {
-                        this.reset(); // Vissza a képernyő tetejére
-                        this.element.style.transform = 'scale(1)';
-                    }, 100);
-                };
-
-                document.body.appendChild(this.element); // Hozzáadás az oldalhoz
-                this.element.ondragstart = function() { return false; }; // Megakadályozza a húzást
-                
-                this.reset(); // Alaphelyzetbe állítás
-            }
+        document.body.appendChild(this.element);
+        this.element.ondragstart = function() { return false; };
+        
+        this.reset();
+    }
 
             reset() {
                 // Típus és kép véletlenszerű kiválasztása
-                this.type = Math.random() < 0.25 ? 'stone' : 'leaf'; // 25% esély kőre (könnyű beállítani)
+                this.type = Math.random() < 0.20 ? 'stone' : 'leaf';
                 
-                // Véletlenszerű méret
-                this.size = Math.random() * 60 + 90; 
+                // Kisebb, reálisabb méret
+                this.size = this.type === 'stone' ? 
+                    Math.random() * 100 + 130 : 
+                    Math.random() * 100 + 130;   
                 
                 if (this.type === 'stone') {
                     this.imageURL = STONE_PICTURE_URL;
                     this.imageElement.alt = "Falling Stone";
-                    // A kő lehet kicsit lassabb, vagy más sebességű
-                    this.speed = Math.random() * 2.5 + 2.0; // GYORSABB KŐ SEBESSÉG
+                    this.speed = Math.random() * 2.5 + 2.0;
                 } else {
                     this.imageURL = LEAF_PICTURES[Math.floor(Math.random() * LEAF_PICTURES.length)];
                     this.imageElement.alt = "Falling Leaf";
@@ -146,14 +138,20 @@ let score = 0;
                 this.imageElement.src = this.imageURL;
                 
                 // Elemek méretének beállítása
-                this.element.style.width = `${this.size}px`;
-                this.element.style.height = `${this.size}px`;
                 this.imageElement.style.width = `${this.size}px`;
                 this.imageElement.style.height = `${this.size}px`;
 
                 // Indulás a képernyő tetején kívül
                 this.x = Math.random() * (window.innerWidth - this.size);
                 this.y = -this.size - (Math.random() * window.innerHeight);
+
+                // Lengés beállítások csak levelekhez
+                if (this.type === 'leaf') {
+                    this.initialX = this.x;
+                    this.swayAmplitude = Math.random() * 40 + 30;
+                    this.swaySpeed = Math.random() * 0.003 + 0.002;
+                    this.swayStartTime = performance.now();
+                }
 
                 this.updateDOM();
             }
@@ -162,9 +160,18 @@ let score = 0;
                 // Lesés, a nehézségi szorzóval együtt
                 this.y += this.speed * difficultyMultiplier;
                 
+                // Lengés effekt hozzáadása
+                const currentTime = performance.now();
+                const elapsed = currentTime - this.swayStartTime;
+                this.x = this.initialX + Math.sin(elapsed * this.swaySpeed) * this.swayAmplitude;
+                
+                // Képernyő határok ellenőrzése
+                if (this.x < 0) this.x = 0;
+                if (this.x > window.innerWidth - this.size) this.x = window.innerWidth - this.size;
+            
+                
                 // Képernyő aljára érkezés 
                 if (this.y > window.innerHeight) {
-                    //  Csak a levelek nullázzák a pontszámo
                     if (this.type === 'leaf') {
                         score = 0; // Pont nullázása
                         scoreElement.textContent = score; // Kijelző frissítés
@@ -172,7 +179,7 @@ let score = 0;
                     
                     this.reset();
                 }
-            }
+            } // update() függvény vége (javítva)
 
             updateDOM() {
                 this.element.style.left = `${this.x}px`;
@@ -217,7 +224,14 @@ let score = 0;
         };
 
         window.addEventListener('resize', () => {
-            // Ablak átméretezés kezelése (pl. a levelek ne ugorjanak ki a képernyőről)
-        })
+           // a levelek ne ugorjanak ki a képernyőről
+           leaves.forEach(leaf => {
+                if (leaf.x > window.innerWidth - leaf.size) {
+                    leaf.x = window.innerWidth - leaf.size;
+                }
+                leaf.initialX = leaf.x; // Lengés középpont frissítése
+            });
+        });
+
 
 
